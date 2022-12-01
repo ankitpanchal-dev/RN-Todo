@@ -1,25 +1,18 @@
-import { View, Text, ScrollView, Alert, FlatList, TouchableOpacity, Dimensions, Pressable, StyleSheet } from 'react-native'
-import React, { useState, useEffect } from 'react'
-// import { Appbar, TextInput } from 'react-native-paper';
+import { View, Text, ScrollView, Alert, FlatList, TouchableOpacity, Dimensions, Pressable, StyleSheet, DatePickerIOSBase } from 'react-native'
+import React, { useState, useEffect, useRef } from 'react'
 
 import firestore from '@react-native-firebase/firestore';
-// import Todo from './Todo';
-// import { NativeBaseProvider } from 'native-base';
-// import { Item } from 'react-native-paper/lib/typescript/components/List/List';
 import * as Animatable from 'react-native-animatable'
 
 import Icon from 'react-native-vector-icons/AntDesign'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
-// import Entypo from 'react-native-vector-icons/Entypo'
 import Octicons from 'react-native-vector-icons/Octicons'
 import Ionicons from 'react-native-vector-icons/Ionicons'
-// Icon.loadFont();
-// import Drawer from './Drawer';
-import { Button, NativeBaseProvider, VStack } from 'native-base'
-
+import { Button, NativeBaseProvider, VStack,Modal,FormControl,Input, TextArea } from 'native-base'
 import Collapsible from 'react-native-collapsible';
-
+import { TextInput } from 'react-native-paper';
+// import ModalForm from './ModalForm';
 
 const styles = StyleSheet.create({
     button: {
@@ -40,20 +33,35 @@ export default function Todos() {
     const [loading, setLoading] = useState(true);
     const [todos, setTodos] = useState([]);
     const [dark, setDark] = useState(true)
+    const [modalVisible, setModalVisible] = React.useState(false);
     const [isCollapsed, setCollapsed] = useState("")
+  
+
+    var titleRef =""
+    var descriptionRef =""
     const today = new Date()
-    const [todoObj, setTodoObj] = useState({
-        title: '',
-        complete: "",
-        createdAt: today.toDateString(),
-        description: ''
-    })
+    // const [todoObj, setTodoObj] = useState({
+    //     title: '',
+    //     complete: "",
+    //     createdAt: today.toDateString(),
+    //     description: ''
+    // })
     async function addTodo() {
+        let todoObj = {
+        title: titleRef,
+        complete: false,
+        createdAt: today.toDateString(),
+        description: descriptionRef
+    }
         await ref.add(todoObj);
         Alert.alert("Todo Added !")
         setTodo('');
-        // console.log("ref", ref)  
+        // console.log("titleRef",titleRef)
+      
     }
+
+
+
     useEffect(() => {
         return ref.onSnapshot(querySnapshot => {
             const list = [];
@@ -88,7 +96,11 @@ export default function Todos() {
                     backgroundColor: '#cedaed',
 
                 }}
-                onPress={() => setCollapsed(item.id)}>
+                onPress={(e) =>{
+                   e.preventDefault() 
+                    setCollapsed(item.id)}
+
+                } >
            <Animatable.View animation="bounceInRight" duration={1000}>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -105,7 +117,7 @@ export default function Todos() {
            <Animatable.View animation="bounceInRight" duration={1000}>
 
                 <Collapsible collapsed={item.id == isCollapsed ? false : true} >
-                    <Text style={{ maxWidth: "70%", padding: 5, textAlign: 'left' }}> {item.description}</Text>
+                    <Text style={{ maxWidth: "78%", padding: 5, textAlign: 'left' }}> {item.description}</Text>
                     <View style={{ flexDirection: 'row' }}>
                         <Text style={{ fontSize: 10, paddingRight: 20 }}> {new Date(item.createdAt).toDateString()}</Text>
                     </View>
@@ -129,7 +141,61 @@ export default function Todos() {
             </TouchableOpacity >
             )
     }
-
+const ModalForm = () =>{
+   
+        return <>
+            <Modal isOpen={modalVisible} onClose={() => setModalVisible(false)} avoidKeyboard justifyContent="center" bottom="6" size="lg">
+              <Modal.Content>
+                <Modal.CloseButton />
+                <Modal.Header>Add New Task</Modal.Header>
+                <Modal.Body>
+                  <FormControl >
+                    <FormControl.Label>Title</FormControl.Label>
+                    <Input 
+                    // ref={titleRef}
+                    onChangeText={(value)=>titleRef = value}
+                        />
+                  </FormControl>
+                  <FormControl >
+                    <FormControl.Label>Description</FormControl.Label>
+                  <TextArea 
+                    onChangeText={(value)=>descriptionRef = value}
+                  h={20} />
+                  </FormControl>
+                  
+                </Modal.Body>
+                <Modal.Footer >
+                  <Button
+                  flex="2" 
+                  
+                  onPress={() => {
+addTodo()
+}}>
+                    Add
+                  </Button>
+                  <Button flex="1" variant={"solid"} colorScheme="danger" 
+                  onPress={() => {
+                  setModalVisible(false);
+                }}>
+                    Cancel
+                  </Button>
+                 
+                </Modal.Footer>
+              </Modal.Content>
+            </Modal>
+            {/* <VStack space={8} alignItems="center">
+              <Button w="104" onPress={() => {
+              setModalVisible(!modalVisible);
+            }}>
+                Open Modal
+              </Button>
+              <Text textAlign="center">
+                Open modal and focus on the input element to see the effect.
+              </Text>
+            </VStack> */}
+          </>;
+      
+}
     const themeChange = () => {
         setDark(() => !dark)
     }
@@ -140,7 +206,6 @@ export default function Todos() {
             <View style={{ flexDirection: 'row', padding: 10, alignItems: 'center', justifyContent: 'space-between' }}>
                 <TouchableOpacity activeOpacity={0.8} >
                     <Text><Octicons name='three-bars' color="white" size={25} /> </Text>
-
                 </TouchableOpacity>
                 <Text style={{ fontSize: 20, color: 'white' }}> My Todos</Text>
                 <Pressable onPress={themeChange}>
@@ -159,12 +224,17 @@ export default function Todos() {
 
                 <View style={{ minHeight: 60, justifyContent: 'center', position: 'relative', bottom: 5, flexDirection: 'column', flex: 1, }}>
 
-                    {/* <Input mx="3" placeholder="Input" label={'New Todo'} value={todo} onChangeText={setTodo} /> */}
-                    <Pressable onPress={addTodo} style={{ maxWidth: '100%', alignItems: 'center' }} >
+                    <Pressable onPress={()=>setModalVisible(true)} style={{ maxWidth: '100%', alignItems: 'center' }} >
                         <Text style={styles.button}>+ Add New Task</Text>
                     </Pressable>
 
+                
+            </View>
                 </View>
+        <View > 
+            <NativeBaseProvider>
+            <ModalForm />
+            </NativeBaseProvider>
             </View>
         </View >
     )
